@@ -101,6 +101,12 @@ void play(int turn) {
   }
   return play(turn);
 }
+extern "C" {
+  void play_chess() {
+    init_board();
+    play(1);
+  }
+}
 int main() {
   init_board();
   play(1);
