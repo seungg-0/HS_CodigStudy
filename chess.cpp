@@ -31,7 +31,7 @@ void print_board() {
 
 
 // For now, only king exists.
-bool validate_move(int col1, int row1, int col2, int row2) {
+bool validate_move(int turn, int col1, int row1, int col2, int row2) {
   auto check_value = [](int val) -> bool {
     return 0 <= val && val < board_size;
   };
@@ -40,6 +40,17 @@ bool validate_move(int col1, int row1, int col2, int row2) {
     return check_value(col1) && check_value(row1) &&
             check_value(col2) && check_value(row2);
   };
+  auto current_val = board[row1][col1];
+
+  // even turn = black's turn
+  if (turn % 2 == 0) {
+    if (current_val != 'B')
+      return false;
+  } else {
+    // odd turn = white's turn
+    if (current_val != 'W')
+      return false;
+  }
   if (!check_boundary(col1, row1, col2, row2)) {
     return false;
   }
@@ -67,7 +78,8 @@ bool process_move(int col1, int row1, int col2, int row2) {
   board[row1][col1] = '-';
   return false;
 }
-void play() {
+void play(int turn) {
+  cout << "turn " << turn << endl;
   cout << "press q to quit" << endl;
   cout << "input example : a1 b1" << endl;
   print_board();
@@ -80,16 +92,17 @@ void play() {
   int row1 = input1[1] - '1';
   int col2 = input2[0] - 'a';
   int row2 = input2[1] - '1';
-  if (!validate_move(col1, row1, col2, row2)) {
+  if (!validate_move(turn, col1, row1, col2, row2)) {
     cout << "Invalid input. Please reinput command.\n";
   } else {
     if (process_move(col1, row1, col2, row2))
       return;
+    turn += 1;
   }
-  return play();
+  return play(turn);
 }
 int main() {
   init_board();
-  play();
+  play(1);
   return 0;
 }
