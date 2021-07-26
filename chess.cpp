@@ -1,17 +1,49 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-const int board_size = 8;
-char board[board_size][board_size];
-void init_board() {
-  for (int i = 0; i < board_size; ++i) {
-    for (int j = 0; j < board_size; ++j) {
-      board[i][j] = '-';
-    }
-  }
-  board[0][0] = 'W';
-  board[board_size - 1][board_size - 1] = 'B';
+
+enum class Color {
+  black, white
+};
+string to_string(const Color& c) {
+  if (c == Color::black)
+    return "b";
+  return "w";
 }
+enum class ptype {
+  None, King, Queen
+};
+string to_string(const ptype& p) {
+  switch (p) {
+    case ptype::King:
+      return "K";
+    case ptype::Queen:
+      return "Q";
+    default:
+      return "?";
+  }
+}
+
+using Piece = optional<pair<Color, ptype>>;
+
+string to_string(const Piece& p) {
+  if (!p.has_value())
+    return "";
+  return to_string(p.value().first) + to_string(p.value().second);
+}
+
+ostream& operator<<(ostream& os, const Piece& p) {
+  os << to_string(p);
+  return os;
+}
+const int board_size = 8;
+Piece board[board_size][board_size];
+void init_board() {
+  board[0][0] = make_pair(Color::white, ptype::King);
+  board[board_size - 1][board_size - 1] = make_pair(Color::black, ptype::King);
+}
+
+
 
 
 void print_board() {
