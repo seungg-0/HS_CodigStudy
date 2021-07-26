@@ -57,6 +57,7 @@ class Chess():
             return 0
         else:
             self.WhitePrint()
+        self.BlackInput = input()
         self.BlackMove()
 
     def BlackMove(self):
@@ -67,6 +68,7 @@ class Chess():
             return 0
         else:
             self.BlackPrint()
+        self.WhiteInput = input()
         self.WhiteMove()
 
     def WhitePrint(self):
@@ -107,24 +109,10 @@ class Chess():
 
         self.BeforeMoveBlack = self.Bcolumn + self.Brow
 
-    # def MoveUp(self):
-    #
-    # def MoveDown(self):
-    #
-    # def MoveLeft(self):
-    #
-    # def MoveRight(self):
-    #
-    # def MoveLeftUp(self):
-    #
-    # def MoveRightUp(self):
-    #
-    # def MoveLeftDown(self):
-    #
-    # def MoveRightDown(self):
 
 run = Chess()
 game = run.GameStart()
 
 
-# 29행 에러 해결, 가장자리에 위치하는 경우 예외처리, 체크메이트 추가 
+# 가장자리에 위치하는 경우 예외처리, 체크메이트 알림 기능 추가, 기보 기록하는 함수 작성
+# king 말고 다른 말들 추가해서 기능 완성하기
