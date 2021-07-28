@@ -23,7 +23,6 @@ string to_string(const ptype& p) {
       return "?";
   }
 }
-
 using Piece = optional<pair<Color, ptype>>;
 
 string to_string(const Piece& p) {
@@ -44,7 +43,40 @@ void init_board() {
 }
 
 
-
+using loc = pair<int, int>;
+auto check_value = [](int val) -> bool {
+    return 0 <= val && val < board_size;
+  };
+auto in_boundary = 
+[](const loc& l1, const loc& l2) -> bool {
+  return check_value(l1.first) && check_value(l1.second) &&
+          check_value(l2.first) && check_value(l2.second);
+};
+set<loc> diagonal(const loc& l) {
+  set<loc> x;
+  int row = 0;
+  int col = l.second + l.first;
+  while (col) {
+    x.insert(make_pair(row++, col--));
+  }
+  return x;
+}
+auto horizontal = [](const loc& l) -> set<loc> {
+  set<loc> x;
+  int col = board_size - 1;
+  while (col) {
+    x.insert(make_pair(l.first, col--));
+  }
+  return x;
+};
+auto vertical = [](const loc& l) -> set<loc> {
+  set<loc> x;
+  int row = board_size - 1;
+  while (row) {
+    x.insert(make_pair(row--, l.second));
+  }
+  return x;
+};
 
 void print_board() {
   for (int i = 0; i < board_size; ++i) {
@@ -61,53 +93,69 @@ void print_board() {
   cout << endl;
 }
 
-
-// For now, only king exists.
-bool validate_move(int turn, int col1, int row1, int col2, int row2) {
-  auto check_value = [](int val) -> bool {
-    return 0 <= val && val < board_size;
-  };
-  auto check_boundary = 
-    [&check_value](int col1, int row1, int col2, int row2) -> bool {
-    return check_value(col1) && check_value(row1) &&
-            check_value(col2) && check_value(row2);
-  };
-  auto current_val = board[row1][col1];
-
-  // even turn = black's turn
-  if (turn % 2 == 0) {
-    if (current_val != 'B')
-      return false;
-  } else {
-    // odd turn = white's turn
-    if (current_val != 'W')
-      return false;
-  }
-  if (!check_boundary(col1, row1, col2, row2)) {
-    return false;
-  }
-  if (col1 == col2 && row1 == row2) {
-    return false;
-  }
-  if (abs(col1 - col2) > 1 || abs(row1 - row2) > 1) {
+bool validate_king(const loc& l1, const loc& l2) {
+  if (abs(l1.first - l2.first) > 1 || abs(l1.second - l2.second) > 1) {
     return false;
   }
   return true;
 }
+bool validate_queen(const loc& l1, const loc& l2) {
+  //type : set<loc>
+  auto s1 = horizontal(l1);
+  auto s2 = vertical(l1);
+  auto s3 = diagonal(l1);
+  s1.insert(s2.begin(), s2.end());
+  s1.insert(s3.begin(), s3.end());
+  return s1.find(l2) != s1.end();
+}
 
-// 1. validate move
-// 2. check king's status (to see who win the game)
-bool process_move(int col1, int row1, int col2, int row2) {
-  if (board[row2][col2] == 'B') {
-    cout << "White win!\n";
+// compare the input move and actual piece movability
+bool validate_move(int turn, const loc& l1, const loc& l2) {
+  
+  const auto& current_val = board[l1.first][l1.second];
+
+  // empty area
+  if (!current_val.has_value())
+    return false;
+  // even turn = black's turn
+  if (turn % 2 == 0) {
+    if (current_val.value().first == Color::white)
+      return false;
+  } else {
+    // odd turn = white's turn
+    if (current_val.value().first == Color::black)
+      return false;
+  }
+
+  // location should be in board
+  if (!in_boundary(l1, l2)) {
+    return false;
+  }
+  // remain same area is false
+  if (l1.first == l2.first && l1.second == l2.second) {
+    return false;
+  }
+
+  const auto &current_ptype = current_val.value().second;
+  if (current_ptype == ptype::King) {
+    return validate_king(l1, l2);
+  } else if (current_ptype == ptype::Queen) {
+    return validate_queen(l1, l2);
+  } else {
+    return false;
+  }
+}
+
+// 1. move piece
+// 2. check king's status (to see who wins)
+bool process_move(const loc& l1, const loc& l2) {
+  auto dest_val = board[l2.first][l2.second];
+  if (dest_val.value().second == ptype::King) {
+    cout << to_string(dest_val.value().first) << " wins!\n";
     return true;
   }
-  if (board[row2][col2] == 'W') {
-    cout << "Black win!\n";
-    return true;
-  }
-  board[row2][col2] = board[row1][col1];
-  board[row1][col1] = '-';
+  board[l2.first][l2.second] = board[l1.first][l1.second];
+  board[l1.first][l1.second] = nullopt;
   return false;
 }
 void play(int turn) {
@@ -124,10 +172,12 @@ void play(int turn) {
   int row1 = input1[1] - '1';
   int col2 = input2[0] - 'a';
   int row2 = input2[1] - '1';
-  if (!validate_move(turn, col1, row1, col2, row2)) {
+  auto l1 = make_pair(row1, col1);
+  auto l2 = make_pair(row2, col2);
+  if (!validate_move(turn, l1, l2)) {
     cout << "Invalid input. Please reinput command.\n";
   } else {
-    if (process_move(col1, row1, col2, row2))
+    if (process_move(l1, l2))
       return;
     turn += 1;
   }
@@ -140,7 +190,7 @@ extern "C" {
   }
 }
 int main() {
-  init_board();
-  play(1);
+  // init_board();
+  // play(1);
   return 0;
 }
