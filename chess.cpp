@@ -164,13 +164,20 @@ bool validate_input(const Board& b, int turn, const loc& l1, const loc& l2) {
     cout << "same area error\n";
     return false;
   }
-
   const auto& current_val = b.get_val(l1);
 
   // empty area
   if (!current_val.has_value()) {
     cout << "empty area error\n";
     return false;
+  }
+  // color error
+  auto dest_val = b.get_val(l2);
+  if (dest_val.has_value()) {
+    if (current_val.value().first == dest_val.value().first) {
+      cout << "same color error\n";
+      return false;
+    }
   }
   // even turn = black's turn
   if (turn % 2 == 0) {
