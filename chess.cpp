@@ -1,5 +1,6 @@
 #include <iostream>
 #include <optional>
+#include <functional>
 using namespace std;
 
 enum class Color {
@@ -35,20 +36,26 @@ std::ostream& operator<<(std::ostream& os, const Piece& p) {
   os << to_string(p);
   return os;
 }
+auto compose = [](auto f, auto g) {
+  return [=](auto&& ... x) {
+    return f(g(x...));
+  };
+};
 const int board_size{8};
 using loc = pair<int, int>;
-loc left(const loc& l) {
+loc move_left(const loc& l) {
   return loc(l.first, l.second - 1);
 }
-loc right(const loc& l) {
+loc move_right(const loc& l) {
   return loc(l.first, l.second + 1);
 }
-loc up(const loc& l) {
+loc move_up(const loc& l) {
   return loc(l.first - 1, l.second);
 }
-loc down(const loc& l) {
+loc move_down(const loc& l) {
   return loc(l.first + 1, l.second);
 }
+
 class Board {
   public:
     Piece get_val(const loc& l) const {
@@ -92,36 +99,18 @@ auto in_boundary = [](const loc& l) -> bool {
   return check_value(l.first) && check_value(l.second);
 };
 
-bool visit[board_size][board_size];
-void init_visit() {
-  for (size_t i = 0; i < board_size; ++i) {
-    for (size_t j = 0; j < board_size; ++j) {
-      visit[i][j] = false;
-    }
-  }
-}
 bool is_empty_slot(const Board& b, const loc& l) {
   return b.get_val(l) == nullopt;
 }
-
-bool queen_reachable(const Board& b, const loc& cur, const loc& dest) {
-  if (!in_boundary(cur) || !is_empty_slot(b, cur) ||
-      visit[cur.first][cur.second]) {
-    return false;
-  }
+bool queen_reachable(const Board& b, const loc& cur, const loc& dest,
+                    function<loc(loc)> func) {
   if (cur == dest)
     return true;
-  else {
-    visit[cur.first][cur.second] = true;
-    //left, right, up, down, leftup, leftdown, rightup, rightdown
-    return queen_reachable(b, left(cur), dest) ||
-          queen_reachable(b, right(cur), dest) ||
-          queen_reachable(b, up(cur), dest) || 
-          queen_reachable(b, down(cur), dest) ||
-          queen_reachable(b, up(left(cur)), dest) ||
-          queen_reachable(b, up(right(cur)), dest) ||
-          queen_reachable(b, down(left(cur)), dest) ||
-          queen_reachable(b, down(right(cur)), dest);
+
+  if (!in_boundary(cur) || !is_empty_slot(b, cur)) {
+    return false;
+  } else {
+    return queen_reachable(b, func(cur), dest, func);
   }
 }
 bool king_reachable(const Board& b, const loc& cur, const loc& dest) {
@@ -129,11 +118,21 @@ bool king_reachable(const Board& b, const loc& cur, const loc& dest) {
         abs(cur.second - dest.second) <= 1;
 }
 bool reachable(const Board& b, const loc& l1, const loc& l2) {
-  init_visit();
   auto p = b.get_val(l1);
   const auto& piece_type = p.value().second;
   if (piece_type == ptype::Queen) {
-    return queen_reachable(b, l1, l2);
+    return queen_reachable(b, move_left(l1), l2, move_left) ||
+            queen_reachable(b, move_down(l1), l2, move_down) ||
+            queen_reachable(b, move_up(l1), l2, move_up) ||
+            queen_reachable(b, move_right(l1), l2, move_right) ||
+            queen_reachable(b, compose(move_up, move_right)(l1), l2, 
+                            compose(move_up, move_right)) ||
+            queen_reachable(b, compose(move_up, move_right)(l1), l2,
+                            compose(move_up, move_right)) ||
+            queen_reachable(b, compose(move_down, move_right)(l1), l2,
+                            compose(move_down, move_right)) ||
+            queen_reachable(b, compose(move_down, move_right)(l1), l2,
+                            compose(move_down, move_right));
   } else if (piece_type == ptype::King) {
     return king_reachable(b, l1, l2);
   } else {
@@ -149,6 +148,7 @@ void print_menu(const int& turn) {
 string to_string(const loc& l) {
   return "[" + to_string(l.first) + "][" + to_string(l.second) + "]";
 }
+
 // check if input is valid
 // 1. l1 & l2 should be in boundary
 // 2. turn & piece color should be matched.
@@ -192,10 +192,15 @@ bool validate_input(const Board& b, int turn, const loc& l1, const loc& l2) {
       return false;
     }
   }
+  // check if reachable
+  if (!reachable(b, l1, l2)) {
+    cout << "unreachable error\n";
+    return false;
+  }
+
   return true;
 }
 bool process_move(Board& b, const loc& l1, const loc& l2) {
-  init_visit();
   auto p1 = b.get_val(l1);
   auto p2 = b.get_val(l2);
   if (p2.has_value() && p2.value().second == ptype::King) {
