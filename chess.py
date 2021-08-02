@@ -48,12 +48,19 @@ board = []
 
 def init_board():
     wk = Color.WHITE, PieceType.KING
-    bk = Color.BLACK, PieceType.KING
     wq = Color.WHITE, PieceType.QUEEN
+    wb1 = Color.WHITE, PieceType.BISHOP
+    wb2 = Color.WHITE, PieceType.BISHOP
+    wr1 = Color.WHITE, PieceType.ROOK
+    wr2 = Color.WHITE, PieceType.ROOK
+    bk = Color.BLACK, PieceType.KING
     bq = Color.BLACK, PieceType.QUEEN
-    black_row = [bk, bq, None, None, None, None, None, None]
-    white_row = [None, None, None, None, None, None, wq, wk]
-    empty_row = [None] * 8
+    bb1 = Color.BLACK, PieceType.BISHOP
+    bb2 = Color.BLACK, PieceType.BISHOP
+    br1 = Color.BLACK, PieceType.ROOK
+    br2 = Color.BLACK, PieceType.ROOK
+    black_row = [bk, bq, bb1, bb2, br1, br2, None, None]
+    white_row = [None, None, wb1, wb2, wr1, wr2, wq, wk]
     board.append(black_row)
     for i in range(6):
         board.append([None] * 8)
@@ -87,14 +94,14 @@ def in_boundary(loc: Tuple):
     return check_value(loc[0]) and check_value(loc[1])
 
 
-def queen_reachable(cur, dest, func) -> bool:
+def recursive_reachable(cur, dest, func) -> bool:
     if cur == dest:
         return True
 
     if in_boundary(cur) is False or get_val(cur) is not None:
         return False
     else:
-        return queen_reachable(func(cur), dest, func)
+        return recursive_reachable(func(cur), dest, func)
 
 
 def king_reachable(cur, dest):
@@ -116,16 +123,26 @@ def composite_function(f, g):
 def reachable(l1: Tuple, l2: Tuple) -> bool:
     p = get_val(l1)
     if p[1] == PieceType.QUEEN:
-        return queen_reachable(left(l1), l2, left) or \
-                queen_reachable(down(l1), l2, down) or \
-                queen_reachable(up(l1), l2, up) or \
-                queen_reachable(right(l1), l2, right) or \
-                queen_reachable(up(right(l1)), l2, composite_function(up, right)) or \
-                queen_reachable(up(left(l1)), l2, composite_function(up, left)) or \
-                queen_reachable(down(right(l1)), l2, composite_function(down, right)) or \
-                queen_reachable(down(left(l1)), l2, composite_function(down, left))
+        return recursive_reachable(left(l1), l2, left) or \
+                recursive_reachable(down(l1), l2, down) or \
+                recursive_reachable(up(l1), l2, up) or \
+                recursive_reachable(right(l1), l2, right) or \
+                recursive_reachable(up(right(l1)), l2, composite_function(up, right)) or \
+                recursive_reachable(up(left(l1)), l2, composite_function(up, left)) or \
+                recursive_reachable(down(right(l1)), l2, composite_function(down, right)) or \
+                recursive_reachable(down(left(l1)), l2, composite_function(down, left))
     elif p[1] == PieceType.KING:
         return king_reachable(l1, l2)
+    elif p[1] == PieceType.BISHOP:
+        return recursive_reachable(up(right(l1)), l2, composite_function(up, right)) or \
+                recursive_reachable(up(left(l1)), l2, composite_function(up, left)) or \
+                recursive_reachable(down(right(l1)), l2, composite_function(down, right)) or \
+                recursive_reachable(down(left(l1)), l2, composite_function(down, left))
+    elif p[1] == PieceType.ROOK:
+        return recursive_reachable(left(l1), l2, left) or \
+               recursive_reachable(down(l1), l2, down) or \
+               recursive_reachable(up(l1), l2, up) or \
+               recursive_reachable(right(l1), l2, right)
     else:
         return False
 
