@@ -56,7 +56,7 @@ def init_board():
     empty_row = [None] * 8
     board.append(black_row)
     for i in range(6):
-        board.append(empty_row)
+        board.append([None] * 8)
     board.append(white_row)
 
 
@@ -84,22 +84,21 @@ def check_value(val):
 
 
 def in_boundary(loc: Tuple):
-    print("in boundary func l = " + str(loc))
     return check_value(loc[0]) and check_value(loc[1])
 
 
 def queen_reachable(cur, dest, func) -> bool:
-    print("in queen_reachable, cur = " + str(cur))
     if cur == dest:
         return True
-    if in_boundary(cur) is False or get_val(cur) is None:
+
+    if in_boundary(cur) is False or get_val(cur) is not None:
         return False
     else:
         return queen_reachable(func(cur), dest, func)
 
 
 def king_reachable(cur, dest):
-    return abs(cur[0] - dest[1]) <= 1 and abs(cur.second - dest.second) <= 1
+    return abs(cur[0] - dest[0]) <= 1 and abs(cur[1] - dest[1]) <= 1
 
 
 def get_val(loc: Tuple):
@@ -110,17 +109,21 @@ def get_val(loc: Tuple):
         return val
 
 
+def composite_function(f, g):
+    return lambda x: f(g(x))
+
+
 def reachable(l1: Tuple, l2: Tuple) -> bool:
     p = get_val(l1)
     if p[1] == PieceType.QUEEN:
-        return (queen_reachable(left(l1), l2, left) or
-                queen_reachable(down(l1), l2, down) or
-                queen_reachable(up(l1), l2, up) or
-                queen_reachable(right(l1), l2, right) or
-                queen_reachable(up(right(l1)), l2, up(right)) or
-                queen_reachable(up(left(l1)), l2, up(left)) or
-                queen_reachable(down(right(l1)), l2, down(right)) or
-                queen_reachable(down(left(l1)), l2, down(left)))
+        return queen_reachable(left(l1), l2, left) or \
+                queen_reachable(down(l1), l2, down) or \
+                queen_reachable(up(l1), l2, up) or \
+                queen_reachable(right(l1), l2, right) or \
+                queen_reachable(up(right(l1)), l2, composite_function(up, right)) or \
+                queen_reachable(up(left(l1)), l2, composite_function(up, left)) or \
+                queen_reachable(down(right(l1)), l2, composite_function(down, right)) or \
+                queen_reachable(down(left(l1)), l2, composite_function(down, left))
     elif p[1] == PieceType.KING:
         return king_reachable(l1, l2)
     else:
@@ -163,11 +166,11 @@ def validate_input(turn, l1, l2):
         if cur_piece[0] == Color.WHITE:
             print("turn error")
             return False
-        elif cur_piece[0] == Color.BLACK:
-            # odd turn = white's turn
-            print("turn error")
-            return False
-            # check if reachable
+    elif cur_piece[0] == Color.BLACK:
+        # odd turn = white's turn
+        print("turn error")
+        return False
+    # check if reachable
     if reachable(l1, l2) is False:
         print("unreachable error")
         return False
@@ -176,14 +179,13 @@ def validate_input(turn, l1, l2):
 
 
 def process_move(l1, l2):
-    print("process move")
     piece1 = get_val(l1)
     piece2 = get_val(l2)
     if piece2 is not None and piece2[1] == PieceType.KING:
         print(str(piece1[0]) + " wins!\n")
         return True
 
-    board[l2[0]][l2[1]] = get_val(l1)
+    board[l2[0]][l2[1]] = piece1
     board[l1[0]][l1[1]] = None
     return False
 
@@ -194,10 +196,10 @@ def play(turn):
     print_board()
 
     # input
-    myinput = input()
-    if myinput[0] == 'q':
+    my_input = input()
+    if my_input[0] == 'q':
         return
-    in1, in2 = myinput.split(' ')
+    in1, in2 = my_input.split(' ')
     print(in1)
     print(in2)
     col1 = ord(in1[0]) - ord('a')
