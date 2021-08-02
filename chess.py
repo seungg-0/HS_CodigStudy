@@ -82,10 +82,6 @@ def print_board():
     print(*colphabet, sep='\t')
 
 
-init_board()
-print_board()
-
-
 def check_value(val):
     return 0 <= val < board_size
 
@@ -109,11 +105,7 @@ def king_reachable(cur, dest):
 
 
 def get_val(loc: Tuple):
-    val = board[loc[0]][loc[1]]
-    if val is None:
-        return None
-    else:
-        return val
+    return board[loc[0]][loc[1]]
 
 
 def composite_function(f, g):
@@ -217,15 +209,12 @@ def play(turn):
     if my_input[0] == 'q':
         return
     in1, in2 = my_input.split(' ')
-    print(in1)
-    print(in2)
     col1 = ord(in1[0]) - ord('a')
     row1 = int(in1[1]) - 1
     col2 = ord(in2[0]) - ord('a')
     row2 = int(in2[1]) - 1
     l1 = row1, col1
     l2 = row2, col2
-    print(l1, l2)
     if validate_input(turn, l1, l2) is False:
         print("Invalid input. Please reinput command.")
     else:
