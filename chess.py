@@ -2,6 +2,10 @@ from enum import Enum
 from typing import Tuple
 
 
+def composite_function(f, g):
+    return lambda x: f(g(x))
+
+
 class Color(Enum):
     def __str__(self):
         return self.value
@@ -63,7 +67,7 @@ def init_board():
     white_row = [None, None, wb1, wb2, wr1, wr2, wq, wk]
     board.append(black_row)
     for i in range(6):
-        board.append([None] * 8)
+        board.append([None] * board_size)
     board.append(white_row)
 
 
@@ -101,20 +105,30 @@ def recursive_reachable(cur, dest, func) -> bool:
 
 
 def king_reachable(cur, dest):
-    return abs(cur[0] - dest[0]) <= 1 and abs(cur[1] - dest[1]) <= 1
+    val1 = abs(cur[0] - dest[0])
+    val2 = abs(cur[1] - dest[1])
+    return val1 <= 1 and val2 <= 1 and not (val1 == 0 and val2 == 0)
+
+
+def knight_reachable(cur, dest):
+    return up(up(left(cur))) == dest or \
+            up(up(right(cur))) == dest or \
+            down(down(left(cur))) == dest or \
+            down(down(right(cur))) == dest or \
+            right(right(up(cur))) == dest or \
+            right(right(down(cur))) == dest or \
+            left(left(up(cur))) == dest or \
+            left(left(down(cur))) == dest
 
 
 def get_val(loc: Tuple):
     return board[loc[0]][loc[1]]
 
 
-def composite_function(f, g):
-    return lambda x: f(g(x))
-
-
 def reachable(l1: Tuple, l2: Tuple) -> bool:
     p = get_val(l1)
-    if p[1] == PieceType.QUEEN:
+    ptype = p[1]
+    if ptype == PieceType.QUEEN:
         return recursive_reachable(left(l1), l2, left) or \
                 recursive_reachable(down(l1), l2, down) or \
                 recursive_reachable(up(l1), l2, up) or \
@@ -123,18 +137,20 @@ def reachable(l1: Tuple, l2: Tuple) -> bool:
                 recursive_reachable(up(left(l1)), l2, composite_function(up, left)) or \
                 recursive_reachable(down(right(l1)), l2, composite_function(down, right)) or \
                 recursive_reachable(down(left(l1)), l2, composite_function(down, left))
-    elif p[1] == PieceType.KING:
+    elif ptype == PieceType.KING:
         return king_reachable(l1, l2)
-    elif p[1] == PieceType.BISHOP:
+    elif ptype == PieceType.BISHOP:
         return recursive_reachable(up(right(l1)), l2, composite_function(up, right)) or \
                 recursive_reachable(up(left(l1)), l2, composite_function(up, left)) or \
                 recursive_reachable(down(right(l1)), l2, composite_function(down, right)) or \
                 recursive_reachable(down(left(l1)), l2, composite_function(down, left))
-    elif p[1] == PieceType.ROOK:
+    elif ptype == PieceType.ROOK:
         return recursive_reachable(left(l1), l2, left) or \
                recursive_reachable(down(l1), l2, down) or \
                recursive_reachable(up(l1), l2, up) or \
                recursive_reachable(right(l1), l2, right)
+    elif ptype == PieceType.KNIGHT:
+        return knight_reachable(l1, l2)
     else:
         return False
 
@@ -154,15 +170,15 @@ def validate_input(turn, l1, l2):
         print("boundary error")
         print(l1 + ", " + l2)
         return False
-    # remain same area is false
+    # remain same spot is false
     if l1 == l2:
         print("same spot error")
         return False
 
     cur_piece = get_val(l1)
-    # empty area
+    # empty spot
     if cur_piece is None:
-        print("empty area error")
+        print("empty spot error")
         return False
     # color error
     dest_piece = get_val(l2)
@@ -221,6 +237,7 @@ def play(turn):
         if process_move(l1, l2) is True:
             return
         turn += 1
+
     return play(turn)
 
 
