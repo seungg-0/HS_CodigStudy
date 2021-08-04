@@ -1,23 +1,24 @@
 from enum import Enum
-from typing import Tuple
 
 
 def composite_function(f, g):
     return lambda x: f(g(x))
 
 
-class Color(Enum):
-    def __str__(self):
-        return self.value
+def double(a):
+    return 2 * a
 
+
+def plus_one(b):
+    return  b + 1
+
+
+class Color(Enum):
     BLACK = "b"
     WHITE = "w"
 
 
 class PieceType(Enum):
-    def __str__(self):
-        return self.value
-
     KING = "K"
     QUEEN = "Q"
     BISHOP = "B"
@@ -26,12 +27,8 @@ class PieceType(Enum):
     PAWN = "P"
 
 
-Piece = Tuple[Color, PieceType]
 
-board_size = 8
-
-
-def left(loc: tuple):
+def left(loc : tuple):
     return loc[0], loc[1] - 1
 
 
@@ -47,6 +44,7 @@ def down(loc):
     return loc[0] + 1, loc[1]
 
 
+board_size = 8
 board = []
 
 
@@ -57,17 +55,28 @@ def init_board():
     wb2 = Color.WHITE, PieceType.BISHOP
     wr1 = Color.WHITE, PieceType.ROOK
     wr2 = Color.WHITE, PieceType.ROOK
+    wn1 = Color.WHITE, PieceType.KNIGHT
+    wn2 = Color.WHITE, PieceType.KNIGHT
     bk = Color.BLACK, PieceType.KING
     bq = Color.BLACK, PieceType.QUEEN
     bb1 = Color.BLACK, PieceType.BISHOP
     bb2 = Color.BLACK, PieceType.BISHOP
     br1 = Color.BLACK, PieceType.ROOK
     br2 = Color.BLACK, PieceType.ROOK
-    black_row = [bk, bq, bb1, bb2, br1, br2, None, None]
-    white_row = [None, None, wb1, wb2, wr1, wr2, wq, wk]
+    bn1 = Color.BLACK, PieceType.KNIGHT
+    bn2 = Color.BLACK, PieceType.KNIGHT
+    white_pawn = [Color.WHITE, PieceType.PAWN, False]
+    wp_row = [white_pawn[:] for _ in range(board_size)]
+    black_pawn = [Color.BLACK, PieceType.PAWN, False]
+    bp_row = [black_pawn[:] for _ in range(board_size)]
+    black_row = [br1, bn1, bb1, bk, bq, bb2, bn2, br2]
+    white_row = [wr1, wn2, wb1, wk, wq, wb2, wn2, wr2]
     board.append(black_row)
-    for i in range(6):
+    board.append(bp_row)
+    for i in range(4):
         board.append([None] * board_size)
+
+    board.append(wp_row)
     board.append(white_row)
 
 
@@ -90,7 +99,7 @@ def check_value(val):
     return 0 <= val < board_size
 
 
-def in_boundary(loc: Tuple):
+def in_boundary(loc):
     return check_value(loc[0]) and check_value(loc[1])
 
 
@@ -121,11 +130,29 @@ def knight_reachable(cur, dest):
             left(left(down(cur))) == dest
 
 
-def get_val(loc: Tuple):
+def pawn_reachable(cur, dest):
+    def small_reachable(func):
+        if func(left(cur)) == dest and get_val(dest) is not None:
+            return True
+        elif func(right(cur)) == dest and get_val(dest) is not None:
+            return True
+        elif func(cur) == dest:
+            return True
+        elif func(func(cur)) == dest:
+            return get_val(func(cur)) is None and get_val(cur)[2] is False
+
+        return False
+    if get_val(cur)[0] == Color.WHITE:
+        return small_reachable(up)
+    else:
+        return small_reachable(down)
+
+
+def get_val(loc):
     return board[loc[0]][loc[1]]
 
 
-def reachable(l1: Tuple, l2: Tuple) -> bool:
+def reachable(l1, l2) -> bool:
     p = get_val(l1)
     ptype = p[1]
     if ptype == PieceType.QUEEN:
@@ -151,6 +178,8 @@ def reachable(l1: Tuple, l2: Tuple) -> bool:
                recursive_reachable(right(l1), l2, right)
     elif ptype == PieceType.KNIGHT:
         return knight_reachable(l1, l2)
+    elif ptype == PieceType.PAWN:
+        return pawn_reachable(l1, l2)
     else:
         return False
 
@@ -209,6 +238,9 @@ def process_move(l1, l2):
     if piece2 is not None and piece2[1] == PieceType.KING:
         print(str(piece1[0]) + " wins!\n")
         return True
+
+    if piece1[1] == PieceType.PAWN:
+        piece1[2] = True
 
     board[l2[0]][l2[1]] = piece1
     board[l1[0]][l1[1]] = None
