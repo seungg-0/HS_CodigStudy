@@ -15,3 +15,4 @@ my_list1[0] = 10
 #  print(my_list1) -> [10,2,3], print(my_list2) -> [1,2,3]
 
 # 출처: https://datamasters.co.kr/49 [데이터마스터]
+
